@@ -27,7 +27,22 @@ const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const PORT = 8947;
 
 const argv = process.argv.slice(2);
-const arg = k => { const a = argv.find(x => x.startsWith('--' + k + '=')); return a ? a.split('=').slice(1).join('=') : null; };
+/* 同时认 --url=地址 和 --url 地址。冻结版只认前一种，空格写法被静默忽略、照样判本地并打印 PASS（BLOCKED.md 第 1 条） */
+const KNOWN = ['--prove', '--break', '--url', '--only'];
+for(let i = 0; i < argv.length; i++){
+  const key = argv[i].split('=')[0];
+  if(!KNOWN.includes(key)){ console.log('不认识的参数：' + argv[i]); process.exit(2); }
+  if(key !== '--prove' && !argv[i].includes('=')){
+    if(!argv[i + 1] || argv[i + 1].startsWith('--')){ console.log(argv[i] + ' 后面缺值'); process.exit(2); }
+    i++;
+  }
+}
+const arg = k => {
+  const eq = argv.find(x => x.startsWith('--' + k + '='));
+  if(eq) return eq.split('=').slice(1).join('=');
+  const i = argv.indexOf('--' + k);
+  return i >= 0 ? argv[i + 1] : null;
+};
 const BREAK = argv.includes('--prove') ? 'noE' : arg('break');
 const URL_ARG = arg('url');
 const ONLY = arg('only') ? arg('only').split(',') : null;
@@ -321,7 +336,12 @@ async function main(){
   cdp.on(m => { if(m.sessionId === sessionId && m.method === 'Runtime.exceptionThrown') pageErrors.push(m.params.exceptionDetails.exception ? m.params.exceptionDetails.exception.description : m.params.exceptionDetails.text); });
 
   async function load(file, label){
-    await page.open(base);
+    // 页面根本打不开（地址错、网站挂了）要算判卷不过，而不是脚本自己崩
+    const opened = await page.open(base).catch(e => 'open-failed');
+    if(opened !== 'empty'){
+      log(`  载入 ${label}：页面 ${base} 没有打开（${opened}）`);
+      return { state: 'page-not-loaded', secs: Infinity, msg: '' };
+    }
     const t0 = Date.now();
     await page.setFile(file);
     const s = await page.waitState(['ready', 'error'], 180000);
@@ -385,12 +405,14 @@ async function main(){
       const l = await load(FIX.unsliced, '6210_Cage_free.3mf');
       check(l.state === 'error', `页面进入报错状态（实际 ${l.state}）`);
       check(/切片/.test(l.msg) && /Bambu Studio/.test(l.msg), `报错里告诉用户去 Bambu Studio 切片导出（提示：${String(l.msg).slice(0, 40)}…）`);
+      if(l.state !== 'page-not-loaded'){
       const disabled = await page.eval(`document.getElementById('export').disabled`);
       check(disabled === true, '导出按钮不可点');
       const before = downloads.size;
       await page.eval(`document.getElementById('export').click()`);
       await sleep(4000);
       check(downloads.size === before, `硬点一下导出，4 秒内页面没有发起任何下载（新增 ${downloads.size - before} 个）`);
+      }
     }
 
     /* c) 逐层生长 + 颜色 */

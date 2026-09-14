@@ -58,7 +58,7 @@
   @media (max-width:820px){ .app{grid-template-columns:1fr;grid-template-rows:auto 60vh;height:auto} aside{border-right:0} }
 </style>
 </head>
-<body data-state="empty">
+<body data-state="booting">
 <div class="app">
 <aside>
   <h1>Print<b>Lapse</b></h1>
@@ -976,6 +976,8 @@ $('#export').addEventListener('click', async () => {
 });
 
 layoutView();
+// 脚本全部就绪、文件框监听已挂上，才算 empty（静态 HTML 里是 booting；远程加载 three.js 慢时，早于这里放进来的文件会没人接）
+setState('empty');
 })();
 </script>
 </body>
