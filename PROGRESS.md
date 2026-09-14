@@ -52,3 +52,15 @@
 ### 判卷冻结
 `verify.js` sha256 = `2de107c62f9d2c44a8d14326dd443fa7162dc6a848205a6456902a88f15c796d`（此后改动须先写 BLOCKED.md）
 冻结前最后一轮：`node verify.js` 退出 0（VERIFY PASS）；`--prove` / `--break=flat` / `--break=onecolor` / `--break=samecam` 全部退出 1，各自只打红对应判据。
+
+## 任务 4 上线（2026-09-14 完成）
+- 仓库 https://github.com/jyb635050-ai/printlapse （public），GitHub Pages：https://jyb635050-ai.github.io/printlapse/
+- **第一次线上判卷是假绿**：冻结版 verify.js 只认 `--url=地址`，任务书写的 `--url 地址` 被静默忽略，日志第二行还是 localhost。
+  修正参数解析 + 页面打不开时判不过而不是崩（详见 BLOCKED.md 第 1、2 条，判据未变）。
+  verify.js sha256：冻结版 `2de107c6…c796d` → 修正版 `edfcb85e1c41eb158c9826f469a6276c4e99acb8c163e8f062205e52c45b6128`
+- 顺带修了页面就绪信号：远程加载 three.js 时，静态的 `data-state="empty"` 让文件在监听挂上前被放进来（线上第一次 cube 超时 180 秒的原因）。
+- 最终结果（修正版 verify.js）：
+  - `node verify.js` → VERIFY PASS（退出 0）
+  - `node verify.js --url https://jyb635050-ai.github.io/printlapse/` → 日志"页面：https://jyb635050-ai.github.io/printlapse/"，VERIFY PASS（退出 0）
+  - `--url http://127.0.0.1:1/` → VERIFY FAIL 6 项（退出 1）
+  - `--prove` / `--break=flat` / `--break=onecolor` / `--break=samecam` → 全部退出 1，各自打红对应判据
