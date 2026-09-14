@@ -141,7 +141,7 @@ def main():
         jobs = [
             ("cube", lambda: cube_stl(os.path.join(work, "cube.stl")) or os.path.join(work, "cube.stl"), ["#00AE42"]),
             ("bearing4c", lambda: BEARING, ["#FF0000", "#0055FF", "#FFFFFF", "#222222"]),
-            ("tower", lambda: tower_stl(os.path.join(work, "tower.stl")) or os.path.join(work, "tower.stl"), ["#C8C8C8"]),
+            ("tower", lambda: tower_stl(os.path.join(work, "tower.stl")) or os.path.join(work, "tower.stl"), ["#2F9BFF"]),
         ]
         for name, model_fn, colours in jobs:
             if only and name not in only:
