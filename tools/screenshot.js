@@ -14,8 +14,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     if(!fs.existsSync(f) || fs.statSync(f).isDirectory()){ res.statusCode = 404; return res.end(); }
     res.setHeader('Content-Type', f.endsWith('.html') ? 'text/html; charset=utf-8' : 'text/javascript'); res.end(fs.readFileSync(f));
   }).listen(8948);
-  const profile = path.join(ROOT, '.work', 'chrome-shot');
-  fs.rmSync(profile, { recursive: true, force: true });
+  // 每次独立配置目录：上一个 Chrome 退得慢时旧目录还锁着
+  for(const d of fs.readdirSync(path.join(ROOT, '.work'))) if(d.startsWith('chrome-shot')){ try{ fs.rmSync(path.join(ROOT, '.work', d), { recursive: true, force: true }); }catch(e){} }
+  const profile = path.join(ROOT, '.work', 'chrome-shot-' + process.pid);
   const chrome = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', ['--headless=new', '--no-sandbox', '--disable-component-update',
     '--remote-debugging-port=0', '--user-data-dir=' + profile, '--window-size=1600,900', 'about:blank'], { stdio: 'ignore' });
   let port; for(let k = 0; k < 100 && !port; k++){ await sleep(200); try{ port = fs.readFileSync(path.join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0]; }catch(e){} }

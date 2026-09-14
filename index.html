@@ -665,8 +665,9 @@ class PrinterScene {
       nozzleZ = layersDone === 0 ? 0.2 : d.layerZ[layersDone - 1];
       parked = true;
     }
-    // 让开：停到热床右边缘外、右立柱内侧（立柱内侧在热床中心右边 171mm，喷头半宽 31mm）
-    if(parked){ headX = d.bedW / 2 + 138; headY = d.bedD / 2; }
+    // 让开：喷头停到热床右边缘外、右立柱内侧（立柱内侧在热床中心右边 171mm，喷头半宽 31mm）；
+    // 热床推到最前面，模型离开横梁，从背面环绕拍也不会被横梁挡住
+    if(parked){ headX = d.bedW / 2 + 138; headY = d.bedD; }
     return { count, headX, headY, nozzleZ, u, camU: N <= 1 ? 1 : i / (N - 1) };
   }
 
@@ -693,14 +694,16 @@ class PrinterScene {
   /* 机位：target 与半径在"整机"和"模型特写"之间按远近滑块插值，按画面宽高自动取景 */
   placeCamera(camera, cfg, st, aspect){
     const d = this.data, bb = d.bbox;
-    const modelC = new T.Vector3((bb.minX + bb.maxX) / 2 - d.bedW / 2, bb.maxZ * 0.45, d.bedD / 2 - (bb.minY + bb.maxY) / 2);
+    // 平滑模式热床停在最前（偏移 bedD/2），连续模式热床来回动，机位对准热床居中时的位置、不跟着晃
+    const bedShift = cfg.mode === 'smooth' ? d.bedD / 2 : 0;
+    const modelC = new T.Vector3((bb.minX + bb.maxX) / 2 - d.bedW / 2, bb.maxZ * 0.45, d.bedD / 2 - (bb.minY + bb.maxY) / 2 + bedShift);
     const modelR = Math.max(45, Math.hypot(bb.maxX - bb.minX, bb.maxY - bb.minY, bb.maxZ) * 0.62);
-    const printerC = new T.Vector3(0, 150, 20), printerR = 340;
+    const printerC = new T.Vector3(0, 150, 20 + bedShift * 0.5), printerR = 340;
     const zf = cfg.zoom;
     const target = printerC.clone().lerp(modelC, zf);
     const radius = Math.exp(Math.log(printerR) * (1 - zf) + Math.log(modelR) * zf);
     let az, el;
-    if(cfg.camera === 'orbit'){ az = -0.56 + st.camU * Math.PI * 2; el = 0.42; }
+    if(cfg.camera === 'orbit'){ az = -0.56 + st.camU * Math.PI * 2; el = 0.58; }
     else if(cfg.camera === 'top'){ az = -0.26; el = 1.08; }
     else { az = -0.56; el = 0.36; }
     const fovV = 34 * Math.PI / 180;
